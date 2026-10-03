@@ -309,18 +309,20 @@ public class WireHandler {
 	 * block at the given position in the level.
 	 */
 	private Node getOrAddNode(BlockPos pos, BlockState state) {
-		return nodes.compute(pos.asLong(), (key, node) -> {
-			if (node == null) {
-				// If there is not yet a node at this position, retrieve and
-				// update one from the cache.
-				return getNextNode(pos, state != null ? state : level.getBlockState(pos));
-			}
-			if (node.invalid) {
-				return revalidateNode(node);
-			}
-
+		long key = pos.asLong();
+		Node node = nodes.get(key);
+		if (node == null) {
+			// If there is not yet a node at this position, retrieve and
+			// update one from the cache.
+			node = getNextNode(pos, state != null ? state : level.getBlockState(pos));
+			nodes.put(key, node);
 			return node;
-		});
+		}
+		if (node.invalid) {
+			return revalidateNode(node);
+		}
+
+		return node;
 	}
 
 	/**
@@ -357,9 +359,7 @@ public class WireHandler {
 		Node[] oldCache = nodeCache;
 		nodeCache = new Node[oldCache.length << 1];
 
-		for (int index = 0; index < oldCache.length; index++) {
-			nodeCache[index] = oldCache[index];
-		}
+		System.arraycopy(oldCache, 0, nodeCache, 0, oldCache.length);
 
 		fillNodeCache(oldCache.length, nodeCache.length);
 	}
@@ -413,7 +413,7 @@ public class WireHandler {
 	 * between the two nodes if they are not yet linked. This link makes accessing
 	 * neighbors of a node signficantly faster.
 	 */
-	private Node getNeighbor(Node node, int iDir) {
+	Node getNeighbor(Node node, int iDir) {
 		Node neighbor = node.neighbors[iDir];
 
 		if (neighbor == null || neighbor.invalid) {
@@ -646,7 +646,7 @@ public class WireHandler {
 		wire.virtualPower = wire.currentPower;
 		wire.externalPower = POWER_MIN - 1;
 
-		wire.connections.set(this::getNeighbor);
+		wire.connections.set(this);
 	}
 
 	/**
@@ -680,9 +680,9 @@ public class WireHandler {
 	 * and update the virtual power accordingly.
 	 */
 	private void findWirePower(WireNode wire, boolean ignoreSearched) {
-		wire.connections.forEach(connection -> {
+		for (WireConnection connection = wire.connections.head; connection != null; connection = connection.next) {
 			if (!connection.accept) {
-				return;
+				continue;
 			}
 
 			WireNode neighbor = connection.wire;
@@ -693,7 +693,7 @@ public class WireHandler {
 
 				wire.offerPower(power, iOpp);
 			}
-		});
+		}
 	}
 
 	/**
@@ -733,7 +733,7 @@ public class WireHandler {
 			// Since 1.16 there is a block that is both a conductor and a signal
 			// source: the target block!
 			if (neighbor.isConductor()) {
-				power = Math.max(power, getDirectSignalTo(wire, neighbor));
+				power = Math.max(power, getDirectSignalTo(neighbor));
 			}
 			if (neighbor.isSignalSource()) {
 				power = Math.max(power, neighbor.state.getSignal(level, neighbor.pos, Directions.ALL[iDir]));
@@ -751,7 +751,7 @@ public class WireHandler {
 	 * Determine the direct signal the given wire receives from neighboring blocks
 	 * through the given conductor node.
 	 */
-	private int getDirectSignalTo(WireNode wire, Node node) {
+	private int getDirectSignalTo(Node node) {
 		int power = POWER_MIN;
 
 		for (int iDir = 0; iDir < Directions.ALL.length; iDir++) {
@@ -883,31 +883,33 @@ public class WireHandler {
 		for (WireNode wire : search) {
 			// The order in which wires are searched will influence the order in
 			// which they update their power levels.
-			wire.connections.forEach(connection -> {
-				if (!connection.offer) {
-					return;
+			for (int iDir : config.getUpdateOrder().cardinalNeighbors(wire.iFlowDir)) {
+				for (WireConnection connection = wire.connections.heads[iDir]; connection != null && connection.iDir == iDir; connection = connection.next) {
+					if (!connection.offer) {
+						continue;
+					}
+	
+					WireNode neighbor = connection.wire;
+	
+					if (neighbor.searched) {
+						continue;
+					}
+	
+					discover(neighbor);
+					findPower(neighbor, false);
+	
+					// If power from neighboring wires has decreased, check for power
+					// from non-wire components so as to determine how low power can
+					// fall.
+					if (neighbor.virtualPower < neighbor.currentPower) {
+						findExternalPower(neighbor);
+					}
+	
+					if (needsUpdate(neighbor)) {
+						search(neighbor, false, connection.iDir);
+					}
 				}
-
-				WireNode neighbor = connection.wire;
-
-				if (neighbor.searched) {
-					return;
-				}
-
-				discover(neighbor);
-				findPower(neighbor, false);
-
-				// If power from neighboring wires has decreased, check for power
-				// from non-wire components so as to determine how low power can
-				// fall.
-				if (neighbor.virtualPower < neighbor.currentPower) {
-					findExternalPower(neighbor);
-				}
-
-				if (needsUpdate(neighbor)) {
-					search(neighbor, false, connection.iDir);
-				}
-			}, config.getUpdateOrder(), wire.iFlowDir);
+			}
 		}
 	}
 
@@ -1008,20 +1010,22 @@ public class WireHandler {
 	 * those wires.
 	 */
 	private void transmitPower(WireNode wire) {
-		wire.connections.forEach(connection -> {
-			if (!connection.offer) {
-				return;
+		for (int iDir : config.getUpdateOrder().cardinalNeighbors(wire.iFlowDir)) {
+			for (WireConnection connection = wire.connections.heads[iDir]; connection != null && connection.iDir == iDir; connection = connection.next) {
+				if (!connection.offer) {
+					continue;
+				}
+	
+				WireNode neighbor = connection.wire;
+	
+				int power = Math.max(POWER_MIN, wire.virtualPower - POWER_STEP);
+				int connectionDir = connection.iDir;
+	
+				if (neighbor.offerPower(power, connectionDir)) {
+					queueWire(neighbor);
+				}
 			}
-
-			WireNode neighbor = connection.wire;
-
-			int power = Math.max(POWER_MIN, wire.virtualPower - POWER_STEP);
-			int iDir = connection.iDir;
-
-			if (neighbor.offerPower(power, iDir)) {
-				queueWire(neighbor);
-			}
-		}, config.getUpdateOrder(), wire.iFlowDir);
+		}
 	}
 
 	/**
@@ -1056,13 +1060,13 @@ public class WireHandler {
 	 * Queue block updates to nodes around the given wire.
 	 */
 	private void queueNeighbors(WireNode wire) {
-		config.getUpdateOrder().forEachNeighbor(this::getNeighbor, wire, wire.iFlowDir, neighbor -> queueNeighbor(neighbor, wire));
+		config.getUpdateOrder().queueNeighbors(this, wire, wire.iFlowDir);
 	}
 
 	/**
 	 * Queue the given node for an update from the given neighboring wire.
 	 */
-	private void queueNeighbor(Node node, WireNode neighborWire) {
+	void queueNeighbor(Node node, WireNode neighborWire) {
 		// Updates to wires are queued when power is transmitted.
 		// While this check makes sure wires in the network are not given block
 		// updates, it also prevents block updates to wires in neighboring networks.
@@ -1104,10 +1108,4 @@ public class WireHandler {
 		neighborUpdater.neighborChanged(node.pos, neighborBlock, neighborPos);
 	}
 
-	@FunctionalInterface
-	public static interface NodeProvider {
-
-		public Node getNeighbor(Node node, int iDir);
-
-	}
 }

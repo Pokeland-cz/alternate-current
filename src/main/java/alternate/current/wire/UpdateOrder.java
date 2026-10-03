@@ -1,10 +1,8 @@
 package alternate.current.wire;
 
 import java.util.Locale;
-import java.util.function.Consumer;
 
 import alternate.current.wire.WireHandler.Directions;
-import alternate.current.wire.WireHandler.NodeProvider;
 
 public enum UpdateOrder {
 
@@ -25,7 +23,7 @@ public enum UpdateOrder {
 	) {
 
 		@Override
-		public void forEachNeighbor(NodeProvider nodes, Node source, int forward, Consumer<Node> action) {
+		public void queueNeighbors(WireHandler handler, WireNode source, int forward) {
 			/*
 			 * This iteration order is designed to be an extension of the Vanilla shape
 			 * update order, and is determined as follows:
@@ -56,42 +54,42 @@ public enum UpdateOrder {
 			int downward  = Directions.DOWN;
 			int upward    = Directions.UP;
 
-			Node front = nodes.getNeighbor(source, forward);
-			Node right = nodes.getNeighbor(source, rightward);
-			Node back  = nodes.getNeighbor(source, backward);
-			Node left  = nodes.getNeighbor(source, leftward);
-			Node below = nodes.getNeighbor(source, downward);
-			Node above = nodes.getNeighbor(source, upward);
+			Node front = handler.getNeighbor(source, forward);
+			Node right = handler.getNeighbor(source, rightward);
+			Node back  = handler.getNeighbor(source, backward);
+			Node left  = handler.getNeighbor(source, leftward);
+			Node below = handler.getNeighbor(source, downward);
+			Node above = handler.getNeighbor(source, upward);
 
 			// direct neighbors (6)
-			action.accept(front);
-			action.accept(back);
-			action.accept(right);
-			action.accept(left);
-			action.accept(below);
-			action.accept(above);
+			handler.queueNeighbor(front, source);
+			handler.queueNeighbor(back, source);
+			handler.queueNeighbor(right, source);
+			handler.queueNeighbor(left, source);
+			handler.queueNeighbor(below, source);
+			handler.queueNeighbor(above, source);
 
 			// diagonal neighbors (12)
-			action.accept(nodes.getNeighbor(front, rightward));
-			action.accept(nodes.getNeighbor(back, leftward));
-			action.accept(nodes.getNeighbor(front, leftward));
-			action.accept(nodes.getNeighbor(back, rightward));
-			action.accept(nodes.getNeighbor(front, downward));
-			action.accept(nodes.getNeighbor(back, upward));
-			action.accept(nodes.getNeighbor(front, upward));
-			action.accept(nodes.getNeighbor(back, downward));
-			action.accept(nodes.getNeighbor(right, downward));
-			action.accept(nodes.getNeighbor(left, upward));
-			action.accept(nodes.getNeighbor(right, upward));
-			action.accept(nodes.getNeighbor(left, downward));
+			handler.queueNeighbor(handler.getNeighbor(front, rightward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, leftward), source);
+			handler.queueNeighbor(handler.getNeighbor(front, leftward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, rightward), source);
+			handler.queueNeighbor(handler.getNeighbor(front, downward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, upward), source);
+			handler.queueNeighbor(handler.getNeighbor(front, upward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, downward), source);
+			handler.queueNeighbor(handler.getNeighbor(right, downward), source);
+			handler.queueNeighbor(handler.getNeighbor(left, upward), source);
+			handler.queueNeighbor(handler.getNeighbor(right, upward), source);
+			handler.queueNeighbor(handler.getNeighbor(left, downward), source);
 
 			// far neighbors (6)
-			action.accept(nodes.getNeighbor(front, forward));
-			action.accept(nodes.getNeighbor(back, backward));
-			action.accept(nodes.getNeighbor(right, rightward));
-			action.accept(nodes.getNeighbor(left, leftward));
-			action.accept(nodes.getNeighbor(below, downward));
-			action.accept(nodes.getNeighbor(above, upward));
+			handler.queueNeighbor(handler.getNeighbor(front, forward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, backward), source);
+			handler.queueNeighbor(handler.getNeighbor(right, rightward), source);
+			handler.queueNeighbor(handler.getNeighbor(left, leftward), source);
+			handler.queueNeighbor(handler.getNeighbor(below, downward), source);
+			handler.queueNeighbor(handler.getNeighbor(above, upward), source);
 		}
 	},
 	HORIZONTAL_FIRST_INWARD(
@@ -110,7 +108,7 @@ public enum UpdateOrder {
 	) {
 
 		@Override
-		public void forEachNeighbor(NodeProvider nodes, Node source, int forward, Consumer<Node> action) {
+		public void queueNeighbors(WireHandler handler, WireNode source, int forward) {
 			/*
 			 * This iteration order is designed to be an inversion of the above update
 			 * order, and is determined as follows:
@@ -141,43 +139,43 @@ public enum UpdateOrder {
 			int downward  = Directions.DOWN;
 			int upward    = Directions.UP;
 
-			Node front = nodes.getNeighbor(source, forward);
-			Node right = nodes.getNeighbor(source, rightward);
-			Node back  = nodes.getNeighbor(source, backward);
-			Node left  = nodes.getNeighbor(source, leftward);
-			Node below = nodes.getNeighbor(source, downward);
-			Node above = nodes.getNeighbor(source, upward);
+			Node front = handler.getNeighbor(source, forward);
+			Node right = handler.getNeighbor(source, rightward);
+			Node back  = handler.getNeighbor(source, backward);
+			Node left  = handler.getNeighbor(source, leftward);
+			Node below = handler.getNeighbor(source, downward);
+			Node above = handler.getNeighbor(source, upward);
 
 			// far neighbors (6)
-			action.accept(nodes.getNeighbor(front, forward));
-			action.accept(nodes.getNeighbor(back, backward));
-			action.accept(nodes.getNeighbor(right, rightward));
-			action.accept(nodes.getNeighbor(left, leftward));
-			action.accept(nodes.getNeighbor(below, downward));
-			action.accept(nodes.getNeighbor(above, upward));
+			handler.queueNeighbor(handler.getNeighbor(front, forward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, backward), source);
+			handler.queueNeighbor(handler.getNeighbor(right, rightward), source);
+			handler.queueNeighbor(handler.getNeighbor(left, leftward), source);
+			handler.queueNeighbor(handler.getNeighbor(below, downward), source);
+			handler.queueNeighbor(handler.getNeighbor(above, upward), source);
 
 			// diagonal neighbors (12)
-			action.accept(nodes.getNeighbor(front, rightward));
-			action.accept(nodes.getNeighbor(back, leftward));
-			action.accept(nodes.getNeighbor(front, leftward));
-			action.accept(nodes.getNeighbor(back, rightward));
-			action.accept(nodes.getNeighbor(front, downward));
-			action.accept(nodes.getNeighbor(back, upward));
-			action.accept(nodes.getNeighbor(front, upward));
-			action.accept(nodes.getNeighbor(back, downward));
-			action.accept(nodes.getNeighbor(right, downward));
-			action.accept(nodes.getNeighbor(left, upward));
-			action.accept(nodes.getNeighbor(right, upward));
-			action.accept(nodes.getNeighbor(left, downward));
+			handler.queueNeighbor(handler.getNeighbor(front, rightward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, leftward), source);
+			handler.queueNeighbor(handler.getNeighbor(front, leftward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, rightward), source);
+			handler.queueNeighbor(handler.getNeighbor(front, downward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, upward), source);
+			handler.queueNeighbor(handler.getNeighbor(front, upward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, downward), source);
+			handler.queueNeighbor(handler.getNeighbor(right, downward), source);
+			handler.queueNeighbor(handler.getNeighbor(left, upward), source);
+			handler.queueNeighbor(handler.getNeighbor(right, upward), source);
+			handler.queueNeighbor(handler.getNeighbor(left, downward), source);
 
 			
 			// direct neighbors (6)
-			action.accept(front);
-			action.accept(back);
-			action.accept(right);
-			action.accept(left);
-			action.accept(below);
-			action.accept(above);
+			handler.queueNeighbor(front, source);
+			handler.queueNeighbor(back, source);
+			handler.queueNeighbor(right, source);
+			handler.queueNeighbor(left, source);
+			handler.queueNeighbor(below, source);
+			handler.queueNeighbor(above, source);
 		}
 	},
 	VERTICAL_FIRST_OUTWARD(
@@ -196,7 +194,7 @@ public enum UpdateOrder {
 	) {
 
 		@Override
-		public void forEachNeighbor(NodeProvider nodes, Node source, int forward, Consumer<Node> action) {
+		public void queueNeighbors(WireHandler handler, WireNode source, int forward) {
 			/*
 			 * This iteration order is designed to be the opposite of the Vanilla shape
 			 * update order, and is determined as follows:
@@ -227,42 +225,42 @@ public enum UpdateOrder {
 			int downward  = Directions.DOWN;
 			int upward    = Directions.UP;
 
-			Node front = nodes.getNeighbor(source, forward);
-			Node right = nodes.getNeighbor(source, rightward);
-			Node back  = nodes.getNeighbor(source, backward);
-			Node left  = nodes.getNeighbor(source, leftward);
-			Node below = nodes.getNeighbor(source, downward);
-			Node above = nodes.getNeighbor(source, upward);
+			Node front = handler.getNeighbor(source, forward);
+			Node right = handler.getNeighbor(source, rightward);
+			Node back  = handler.getNeighbor(source, backward);
+			Node left  = handler.getNeighbor(source, leftward);
+			Node below = handler.getNeighbor(source, downward);
+			Node above = handler.getNeighbor(source, upward);
 
 			// direct neighbors (6)
-			action.accept(below);
-			action.accept(above);
-			action.accept(front);
-			action.accept(back);
-			action.accept(right);
-			action.accept(left);
+			handler.queueNeighbor(below, source);
+			handler.queueNeighbor(above, source);
+			handler.queueNeighbor(front, source);
+			handler.queueNeighbor(back, source);
+			handler.queueNeighbor(right, source);
+			handler.queueNeighbor(left, source);
 
 			// diagonal neighbors (12)
-			action.accept(nodes.getNeighbor(below, forward));
-			action.accept(nodes.getNeighbor(above, backward));
-			action.accept(nodes.getNeighbor(below, backward));
-			action.accept(nodes.getNeighbor(above, forward));
-			action.accept(nodes.getNeighbor(below, rightward));
-			action.accept(nodes.getNeighbor(above, leftward));
-			action.accept(nodes.getNeighbor(below, leftward));
-			action.accept(nodes.getNeighbor(above, rightward));
-			action.accept(nodes.getNeighbor(front, rightward));
-			action.accept(nodes.getNeighbor(back, leftward));
-			action.accept(nodes.getNeighbor(front, leftward));
-			action.accept(nodes.getNeighbor(back, rightward));
+			handler.queueNeighbor(handler.getNeighbor(below, forward), source);
+			handler.queueNeighbor(handler.getNeighbor(above, backward), source);
+			handler.queueNeighbor(handler.getNeighbor(below, backward), source);
+			handler.queueNeighbor(handler.getNeighbor(above, forward), source);
+			handler.queueNeighbor(handler.getNeighbor(below, rightward), source);
+			handler.queueNeighbor(handler.getNeighbor(above, leftward), source);
+			handler.queueNeighbor(handler.getNeighbor(below, leftward), source);
+			handler.queueNeighbor(handler.getNeighbor(above, rightward), source);
+			handler.queueNeighbor(handler.getNeighbor(front, rightward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, leftward), source);
+			handler.queueNeighbor(handler.getNeighbor(front, leftward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, rightward), source);
 
 			// far neighbors (6)
-			action.accept(nodes.getNeighbor(below, downward));
-			action.accept(nodes.getNeighbor(above, upward));
-			action.accept(nodes.getNeighbor(front, forward));
-			action.accept(nodes.getNeighbor(back, backward));
-			action.accept(nodes.getNeighbor(right, rightward));
-			action.accept(nodes.getNeighbor(left, leftward));
+			handler.queueNeighbor(handler.getNeighbor(below, downward), source);
+			handler.queueNeighbor(handler.getNeighbor(above, upward), source);
+			handler.queueNeighbor(handler.getNeighbor(front, forward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, backward), source);
+			handler.queueNeighbor(handler.getNeighbor(right, rightward), source);
+			handler.queueNeighbor(handler.getNeighbor(left, leftward), source);
 		}
 	},
 	VERTICAL_FIRST_INWARD(
@@ -281,7 +279,7 @@ public enum UpdateOrder {
 	) {
 
 		@Override
-		public void forEachNeighbor(NodeProvider nodes, Node source, int forward, Consumer<Node> action) {
+		public void queueNeighbors(WireHandler handler, WireNode source, int forward) {
 			/*
 			 * This iteration order is designed to be an inversion of the above update
 			 * order, and is determined as follows:
@@ -312,49 +310,49 @@ public enum UpdateOrder {
 			int downward  = Directions.DOWN;
 			int upward    = Directions.UP;
 
-			Node front = nodes.getNeighbor(source, forward);
-			Node right = nodes.getNeighbor(source, rightward);
-			Node back  = nodes.getNeighbor(source, backward);
-			Node left  = nodes.getNeighbor(source, leftward);
-			Node below = nodes.getNeighbor(source, downward);
-			Node above = nodes.getNeighbor(source, upward);
+			Node front = handler.getNeighbor(source, forward);
+			Node right = handler.getNeighbor(source, rightward);
+			Node back  = handler.getNeighbor(source, backward);
+			Node left  = handler.getNeighbor(source, leftward);
+			Node below = handler.getNeighbor(source, downward);
+			Node above = handler.getNeighbor(source, upward);
 
 			// far neighbors (6)
-			action.accept(nodes.getNeighbor(below, downward));
-			action.accept(nodes.getNeighbor(above, upward));
-			action.accept(nodes.getNeighbor(front, forward));
-			action.accept(nodes.getNeighbor(back, backward));
-			action.accept(nodes.getNeighbor(right, rightward));
-			action.accept(nodes.getNeighbor(left, leftward));
+			handler.queueNeighbor(handler.getNeighbor(below, downward), source);
+			handler.queueNeighbor(handler.getNeighbor(above, upward), source);
+			handler.queueNeighbor(handler.getNeighbor(front, forward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, backward), source);
+			handler.queueNeighbor(handler.getNeighbor(right, rightward), source);
+			handler.queueNeighbor(handler.getNeighbor(left, leftward), source);
 
 			// diagonal neighbors (12)
-			action.accept(nodes.getNeighbor(below, forward));
-			action.accept(nodes.getNeighbor(above, backward));
-			action.accept(nodes.getNeighbor(below, backward));
-			action.accept(nodes.getNeighbor(above, forward));
-			action.accept(nodes.getNeighbor(below, rightward));
-			action.accept(nodes.getNeighbor(above, leftward));
-			action.accept(nodes.getNeighbor(below, leftward));
-			action.accept(nodes.getNeighbor(above, rightward));
-			action.accept(nodes.getNeighbor(front, rightward));
-			action.accept(nodes.getNeighbor(back, leftward));
-			action.accept(nodes.getNeighbor(front, leftward));
-			action.accept(nodes.getNeighbor(back, rightward));
+			handler.queueNeighbor(handler.getNeighbor(below, forward), source);
+			handler.queueNeighbor(handler.getNeighbor(above, backward), source);
+			handler.queueNeighbor(handler.getNeighbor(below, backward), source);
+			handler.queueNeighbor(handler.getNeighbor(above, forward), source);
+			handler.queueNeighbor(handler.getNeighbor(below, rightward), source);
+			handler.queueNeighbor(handler.getNeighbor(above, leftward), source);
+			handler.queueNeighbor(handler.getNeighbor(below, leftward), source);
+			handler.queueNeighbor(handler.getNeighbor(above, rightward), source);
+			handler.queueNeighbor(handler.getNeighbor(front, rightward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, leftward), source);
+			handler.queueNeighbor(handler.getNeighbor(front, leftward), source);
+			handler.queueNeighbor(handler.getNeighbor(back, rightward), source);
 
 			// direct neighbors (6)
-			action.accept(below);
-			action.accept(above);
-			action.accept(front);
-			action.accept(back);
-			action.accept(right);
-			action.accept(left);
+			handler.queueNeighbor(below, source);
+			handler.queueNeighbor(above, source);
+			handler.queueNeighbor(front, source);
+			handler.queueNeighbor(back, source);
+			handler.queueNeighbor(right, source);
+			handler.queueNeighbor(left, source);
 		}
 	};
 
 	private final int[][] directNeighbors;
 	private final int[][] cardinalNeighbors;
 
-	private UpdateOrder(int[][] directNeighbors, int[][] cardinalNeighbors) {
+	UpdateOrder(int[][] directNeighbors, int[][] cardinalNeighbors) {
 		this.directNeighbors = directNeighbors;
 		this.cardinalNeighbors = cardinalNeighbors;
 	}
@@ -385,6 +383,6 @@ public enum UpdateOrder {
 	 * Each update order must include the source's direct neighbors, but further
 	 * neighbors may not be included.
 	 */
-	public abstract void forEachNeighbor(NodeProvider nodes, Node source, int forward, Consumer<Node> action);
+	public abstract void queueNeighbors(WireHandler handler, WireNode source, int forward);
 
 }
